@@ -44,8 +44,8 @@ body { background: #000; font-family: 'KaiTi','STKaiti','Microsoft YaHei',sans-s
 <div class="watermark">Zcl</div>
 <button class="music-btn off" id="musicBtn">&#9835;</button>
 
-<audio id="bgm" loop preload="auto">
-  <source src="橘子洲的照片/音乐4.mp3" type="audio/mpeg">
+<audio id="bgm" loop>
+  <source src="橘子洲的照片/bgm.mp3" type="audio/mpeg">
 </audio>
 
 <script>
@@ -97,37 +97,23 @@ var audio = document.getElementById('bgm');
 var musicBtn = document.getElementById('musicBtn');
 audio.volume = 0.5;
 
-// 检查音频是否能加载
-audio.addEventListener('error', function(e) {
-  console.error('Audio error:', audio.error);
-});
-audio.addEventListener('canplay', function() {
-  console.log('Audio ready');
-});
-
-// 播放函数
-function playSound() {
-  audio.muted = false;
-  audio.play().then(function() {
-    musicBtn.classList.remove('off');
-    console.log('Playing');
-  }).catch(function(err) {
-    console.error('Play failed:', err);
-  });
-}
-
-// 首次滚动/点击/触摸 → 播放
-['scroll','click','touchstart'].forEach(function(evt) {
+// 首次滚动/点击 → 播放
+['scroll','click'].forEach(function(evt) {
   document.addEventListener(evt, function() {
-    if (audio.paused || audio.muted) playSound();
+    if (audio.paused) {
+      audio.play().then(function() {
+        musicBtn.classList.remove('off');
+      }).catch(function(){});
+    }
   }, { once: true });
 });
 
-// 音乐按钮
 musicBtn.addEventListener('click', function(e) {
   e.stopPropagation();
   if (audio.paused) {
-    playSound();
+    audio.play().then(function() {
+      musicBtn.classList.remove('off');
+    }).catch(function(){});
   } else {
     audio.pause(); musicBtn.classList.add('off');
   }
