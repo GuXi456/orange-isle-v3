@@ -63,10 +63,18 @@ var musicBtn = document.getElementById('musicBtn');
 var started = false;
 audio.volume = 0.5;
 
-// 先播（静音状态，浏览器允许）
+// 静音自动播 → 立刻取消静音（原版方案）
 audio.play().then(function() {
+  if (!started) { audio.muted = false; started = true; }
   musicBtn.classList.remove('paused');
 }).catch(function(){});
+// 兜底：如果浏览器拦截，滚动/点击时再试
+document.addEventListener('scroll', function once() {
+  if (!started) { audio.muted = false; audio.play(); started = true; }
+}, { once: true });
+document.addEventListener('click', function once() {
+  if (!started) { audio.muted = false; audio.play(); started = true; }
+}, { once: true });
 
 var images = [
   "橘子洲的照片/4：3航拍_诗词.jpg",
@@ -105,11 +113,6 @@ setInterval(function() {
   var top = slides[current].offsetTop;
   window.scrollTo({ top: top, behavior: 'smooth' });
 }, 4000);
-
-// 页面滚动时自动取消静音（4 秒后首次自动翻页就会触发）
-window.addEventListener('scroll', function once() {
-  if (!started) { audio.muted = false; started = true; }
-}, { once: true });
 
 // 指示器
 var observer = new IntersectionObserver(function(entries) {
