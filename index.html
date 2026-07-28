@@ -52,7 +52,7 @@ body { background: #000; font-family: 'KaiTi','STKaiti','Microsoft YaHei',sans-s
 <div class="watermark">Zcl</div>
 <button class="music-btn paused" id="musicBtn">&#9835;</button>
 
-  <!-- 静音自动播 + 首次触碰屏幕/滚轮/键盘即取消静音 -->
+  <!-- 静音自动播放，4 秒后自动轮播触发 scroll 事件 → 取消静音 -->
 <audio id="bgm" loop autoplay muted playsinline>
   <source src="橘子洲的照片/音乐4.mp3" type="audio/mpeg">
 </audio>
@@ -60,23 +60,14 @@ body { background: #000; font-family: 'KaiTi','STKaiti','Microsoft YaHei',sans-s
 <script>
 var audio = document.getElementById('bgm');
 var musicBtn = document.getElementById('musicBtn');
+var started = false;
 audio.volume = 0.5;
 
-function unmute() {
-  audio.muted = false;
+// 先播（静音状态，浏览器允许）
+audio.play().then(function() {
   musicBtn.classList.remove('paused');
-}
+}).catch(function(){});
 
-// 任意交互即取消静音（滚动/按键/触摸都算）
-['click','scroll','keydown','touchstart','wheel'].forEach(function(evt) {
-  document.addEventListener(evt, unmute, { once: true });
-});
-
-musicBtn.addEventListener('click', function(e) {
-  e.stopPropagation();
-  if (audio.paused) { audio.muted = false; audio.play(); musicBtn.classList.remove('paused'); }
-  else { audio.pause(); musicBtn.classList.add('paused'); }
-});
 var images = [
   "橘子洲的照片/4：3航拍_诗词.jpg",
   "橘子洲的照片/4：3雕像_诗词.jpg",
@@ -108,11 +99,17 @@ var dots = document.querySelectorAll('.dot');
 var total = slides.length;
 var current = 0;
 
-// 每 4 秒自动翻页
+// 每 4 秒自动翻页（用 window.scrollTo 触发真实 scroll 事件）
 setInterval(function() {
   current = (current + 1) % total;
-  slides[current].scrollIntoView({ behavior: 'smooth' });
+  var top = slides[current].offsetTop;
+  window.scrollTo({ top: top, behavior: 'smooth' });
 }, 4000);
+
+// 页面滚动时自动取消静音（4 秒后首次自动翻页就会触发）
+window.addEventListener('scroll', function once() {
+  if (!started) { audio.muted = false; started = true; }
+}, { once: true });
 
 // 指示器
 var observer = new IntersectionObserver(function(entries) {
@@ -126,13 +123,10 @@ var observer = new IntersectionObserver(function(entries) {
 slides.forEach(function(s) { observer.observe(s); });
 
 // 音乐按钮
-var musicBtn = document.getElementById('musicBtn');
-musicBtn.classList.remove('paused'); // 初始即播放态
-
 musicBtn.addEventListener('click', function(e) {
   e.stopPropagation();
   if (audio.paused) {
-    audio.muted = false; audio.play();
+    audio.muted = false; audio.play(); started = true;
     musicBtn.classList.remove('paused');
   } else {
     audio.pause(); musicBtn.classList.add('paused');
