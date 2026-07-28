@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>橘子洲</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { background: #000; font-family: 'KaiTi','STKaiti','Microsoft YaHei',sans-serif; }
+
+.slide {
+  width: 100%; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.slide img {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+}
+
+.music-btn {
+  position: fixed; bottom: 24px; right: 24px; z-index: 100;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+  color: #fff; font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.music-btn.paused { color: rgba(255,255,255,0.3); }
+
+.watermark {
+  position: fixed; bottom: 28px; left: 24px; z-index: 100;
+  font-size: 12px; color: rgba(255,255,255,0.35);
+  letter-spacing: 3px;
+}
+
+.indicators {
+  position: fixed; right: 16px; top: 50%; transform: translateY(-50%);
+  z-index: 100; display: flex; flex-direction: column; gap: 6px;
+}
+.dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,0.3); transition: all 0.3s;
+}
+.dot.active { background: #e8b870; height: 20px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="slides"></div>
+<div class="indicators" id="indicators"></div>
+<div class="watermark">Zcl</div>
+<button class="music-btn paused" id="musicBtn">&#9835;</button>
+
+  <!-- 静音自动播 + 首次触碰屏幕/滚轮/键盘即取消静音 -->
+<audio id="bgm" loop autoplay muted playsinline>
+  <source src="橘子洲的照片/音乐4.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+var audio = document.getElementById('bgm');
+var musicBtn = document.getElementById('musicBtn');
+audio.volume = 0.5;
+
+function unmute() {
+  audio.muted = false;
+  musicBtn.classList.remove('paused');
+}
+
+// 任意交互即取消静音（滚动/按键/触摸都算）
+['click','scroll','keydown','touchstart','wheel'].forEach(function(evt) {
+  document.addEventListener(evt, unmute, { once: true });
+});
+
+musicBtn.addEventListener('click', function(e) {
+  e.stopPropagation();
+  if (audio.paused) { audio.muted = false; audio.play(); musicBtn.classList.remove('paused'); }
+  else { audio.pause(); musicBtn.classList.add('paused'); }
+});
+var images = [
+  "橘子洲的照片/4：3航拍_诗词.jpg",
+  "橘子洲的照片/4：3雕像_诗词.jpg",
+  "橘子洲的照片/4：3江景_诗词_底框.jpg",
+  "橘子洲的照片/4：3问天台_文字.jpg",
+  "橘子洲的照片/4：3美食拼图.jpg",
+  "橘子洲的照片/4：3邮轮_文字.jpg",
+  "橘子洲的照片/4：3背影_文字.jpg"
+];
+
+var slidesEl = document.getElementById('slides');
+var indicators = document.getElementById('indicators');
+
+images.forEach(function(src, i) {
+  var div = document.createElement('div');
+  div.className = 'slide';
+  var img = document.createElement('img');
+  img.src = src;
+  div.appendChild(img);
+  slidesEl.appendChild(div);
+
+  var dot = document.createElement('div');
+  dot.className = 'dot' + (i === 0 ? ' active' : '');
+  indicators.appendChild(dot);
+});
+
+var slides = document.querySelectorAll('.slide');
+var dots = document.querySelectorAll('.dot');
+var total = slides.length;
+var current = 0;
+
+// 每 4 秒自动翻页
+setInterval(function() {
+  current = (current + 1) % total;
+  slides[current].scrollIntoView({ behavior: 'smooth' });
+}, 4000);
+
+// 指示器
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) {
+    if (e.isIntersecting) {
+      dots.forEach(function(d, i) { d.classList.toggle('active', slides[i] === e.target); });
+      current = Array.from(slides).indexOf(e.target);
+    }
+  });
+}, { threshold: 0.6 });
+slides.forEach(function(s) { observer.observe(s); });
+
+// 音乐按钮
+var musicBtn = document.getElementById('musicBtn');
+musicBtn.classList.remove('paused'); // 初始即播放态
+
+musicBtn.addEventListener('click', function(e) {
+  e.stopPropagation();
+  if (audio.paused) {
+    audio.muted = false; audio.play();
+    musicBtn.classList.remove('paused');
+  } else {
+    audio.pause(); musicBtn.classList.add('paused');
+  }
+});
+
+// 键盘翻页
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+    e.preventDefault();
+    current = Math.min(current + 1, total - 1);
+    slides[current].scrollIntoView({ behavior: 'smooth' });
+  }
+  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    current = Math.max(current - 1, 0);
+    slides[current].scrollIntoView({ behavior: 'smooth' });
+  }
+});
+</script>
+</body>
+</html>
