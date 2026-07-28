@@ -6,7 +6,6 @@
 <title>橘子洲</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
 body { background: #000; font-family: 'KaiTi','STKaiti','Microsoft YaHei',sans-serif; }
 
 .slide {
@@ -14,10 +13,7 @@ body { background: #000; font-family: 'KaiTi','STKaiti','Microsoft YaHei',sans-s
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
-.slide img {
-  max-width: 100%; max-height: 100%;
-  object-fit: contain;
-}
+.slide img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
 .music-btn {
   position: fixed; bottom: 24px; right: 24px; z-index: 100;
@@ -26,22 +22,18 @@ body { background: #000; font-family: 'KaiTi','STKaiti','Microsoft YaHei',sans-s
   color: #fff; font-size: 18px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.music-btn.paused { color: rgba(255,255,255,0.3); }
+.music-btn.off { color: rgba(255,255,255,0.3); }
 
 .watermark {
   position: fixed; bottom: 28px; left: 24px; z-index: 100;
-  font-size: 12px; color: rgba(255,255,255,0.35);
-  letter-spacing: 3px;
+  font-size: 12px; color: rgba(255,255,255,0.35); letter-spacing: 3px;
 }
 
 .indicators {
   position: fixed; right: 16px; top: 50%; transform: translateY(-50%);
   z-index: 100; display: flex; flex-direction: column; gap: 6px;
 }
-.dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: rgba(255,255,255,0.3); transition: all 0.3s;
-}
+.dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.3); transition: all 0.3s; }
 .dot.active { background: #e8b870; height: 20px; border-radius: 3px; }
 </style>
 </head>
@@ -50,32 +42,13 @@ body { background: #000; font-family: 'KaiTi','STKaiti','Microsoft YaHei',sans-s
 <div id="slides"></div>
 <div class="indicators" id="indicators"></div>
 <div class="watermark">Zcl</div>
-<button class="music-btn paused" id="musicBtn">&#9835;</button>
+<button class="music-btn off" id="musicBtn">&#9835;</button>
 
-  <!-- 静音自动播放，4 秒后自动轮播触发 scroll 事件 → 取消静音 -->
 <audio id="bgm" loop autoplay muted playsinline>
   <source src="橘子洲的照片/音乐4.mp3" type="audio/mpeg">
 </audio>
 
 <script>
-var audio = document.getElementById('bgm');
-var musicBtn = document.getElementById('musicBtn');
-var started = false;
-audio.volume = 0.5;
-
-// 静音自动播 → 立刻取消静音（原版方案）
-audio.play().then(function() {
-  if (!started) { audio.muted = false; started = true; }
-  musicBtn.classList.remove('paused');
-}).catch(function(){});
-// 兜底：如果浏览器拦截，滚动/点击时再试
-document.addEventListener('scroll', function once() {
-  if (!started) { audio.muted = false; audio.play(); started = true; }
-}, { once: true });
-document.addEventListener('click', function once() {
-  if (!started) { audio.muted = false; audio.play(); started = true; }
-}, { once: true });
-
 var images = [
   "橘子洲的照片/4：3航拍_诗词.jpg",
   "橘子洲的照片/4：3雕像_诗词.jpg",
@@ -90,13 +63,9 @@ var slidesEl = document.getElementById('slides');
 var indicators = document.getElementById('indicators');
 
 images.forEach(function(src, i) {
-  var div = document.createElement('div');
-  div.className = 'slide';
-  var img = document.createElement('img');
-  img.src = src;
-  div.appendChild(img);
-  slidesEl.appendChild(div);
-
+  var div = document.createElement('div'); div.className = 'slide';
+  var img = document.createElement('img'); img.src = src;
+  div.appendChild(img); slidesEl.appendChild(div);
   var dot = document.createElement('div');
   dot.className = 'dot' + (i === 0 ? ' active' : '');
   indicators.appendChild(dot);
@@ -107,11 +76,10 @@ var dots = document.querySelectorAll('.dot');
 var total = slides.length;
 var current = 0;
 
-// 每 4 秒自动翻页（用 window.scrollTo 触发真实 scroll 事件）
+// 自动翻页
 setInterval(function() {
   current = (current + 1) % total;
-  var top = slides[current].offsetTop;
-  window.scrollTo({ top: top, behavior: 'smooth' });
+  window.scrollTo({ top: slides[current].offsetTop, behavior: 'smooth' });
 }, 4000);
 
 // 指示器
@@ -119,34 +87,41 @@ var observer = new IntersectionObserver(function(entries) {
   entries.forEach(function(e) {
     if (e.isIntersecting) {
       dots.forEach(function(d, i) { d.classList.toggle('active', slides[i] === e.target); });
-      current = Array.from(slides).indexOf(e.target);
     }
   });
 }, { threshold: 0.6 });
 slides.forEach(function(s) { observer.observe(s); });
 
-// 音乐按钮
+// 音乐
+var audio = document.getElementById('bgm');
+var musicBtn = document.getElementById('musicBtn');
+audio.volume = 0.5;
+
+// 首次滚动/点击时取消静音
+function unmute() {
+  audio.muted = false;
+  musicBtn.classList.remove('off');
+}
+document.addEventListener('scroll', unmute, { once: true });
+document.addEventListener('click', unmute, { once: true });
+
 musicBtn.addEventListener('click', function(e) {
   e.stopPropagation();
-  if (audio.paused) {
-    audio.muted = false; audio.play(); started = true;
-    musicBtn.classList.remove('paused');
-  } else {
-    audio.pause(); musicBtn.classList.add('paused');
-  }
+  if (audio.paused) { audio.play(); musicBtn.classList.remove('off'); }
+  else { audio.pause(); musicBtn.classList.add('off'); }
 });
 
-// 键盘翻页
+// 键盘
 document.addEventListener('keydown', function(e) {
   if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
     e.preventDefault();
     current = Math.min(current + 1, total - 1);
-    slides[current].scrollIntoView({ behavior: 'smooth' });
+    window.scrollTo({ top: slides[current].offsetTop, behavior: 'smooth' });
   }
   if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
     e.preventDefault();
     current = Math.max(current - 1, 0);
-    slides[current].scrollIntoView({ behavior: 'smooth' });
+    window.scrollTo({ top: slides[current].offsetTop, behavior: 'smooth' });
   }
 });
 </script>
